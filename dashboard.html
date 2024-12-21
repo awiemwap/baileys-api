@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Bot Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px 30px;
+        }
+
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .btn-info {
+            background-color: #007bff;
+        }
+
+        .btn-info:hover {
+            background-color: #0056b3;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 18px;
+        }
+
+        .alert {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            color: #fff;
+            text-align: center;
+        }
+
+        .alert.success {
+            background-color: #28a745;
+        }
+
+        .alert.error {
+            background-color: #dc3545;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>WhatsApp Bot Control</h1>
+
+    <!-- QR Code Section -->
+    <h2>1. Scan QR Code</h2>
+    <div class="qr-container">
+        <button id="btn-scan-qr" class="btn-info">Scan QR Code</button>
+        <div id="qr-code-container" class="qr-container"></div>
+    </div>
+
+    <!-- Send Message Section -->
+    <h2>2. Kirim Pesan</h2>
+    <form id="send-message-form">
+        <div class="form-group">
+            <label for="number">Nomor WhatsApp (Contoh: 6281234567890)</label>
+            <input type="text" id="number" required placeholder="Masukkan nomor tanpa +">
+        </div>
+        <div class="form-group">
+            <label for="message">Pesan</label>
+            <textarea id="message" required placeholder="Tulis pesan di sini..."></textarea>
+        </div>
+        <button type="submit">Kirim Pesan</button>
+    </form>
+
+    <!-- Set Auto Reply Section -->
+    <h2>3. Atur Balasan Otomatis</h2>
+    <form id="auto-reply-form">
+        <div class="form-group">
+            <label for="keyword">Keyword</label>
+            <input type="text" id="keyword" required placeholder="Masukkan kata kunci">
+        </div>
+        <div class="form-group">
+            <label for="replies">Balasan (Pisahkan balasan dengan koma)</label>
+            <textarea id="replies" required placeholder="Contoh: Hai, Ada yang bisa saya bantu?, Terima kasih"></textarea>
+        </div>
+        <button type="submit">Simpan Balasan Otomatis</button>
+    </form>
+
+    <!-- Status Section -->
+    <h2>4. Status Bot</h2>
+    <button id="btn-check-status" class="btn-info">Cek Status Bot</button>
+    <div id="status-container" class="status"></div>
+
+    <!-- Logout Section -->
+    <h2>5. Logout</h2>
+    <button id="btn-logout" class="btn-danger">Logout</button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // 1. Scan QR
+        document.getElementById('btn-scan-qr').addEventListener('click', () => {
+            fetch('/scan')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('qr-code-container').innerHTML = html;
+                });
+        });
+
+        // 2. Kirim Pesan
+        document.getElementById('send-message-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const number = document.getElementById('number').value;
+            const message = document.getElementById('message').value;
+
+            const response = await fetch('/send-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ number, message })
+            });
+
+            const result = await response.json();
+            alert(result.message);
+        });
+
+        // 3. Atur Balasan Otomatis
+        document.getElementById('auto-reply-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const keyword = document.getElementById('keyword').value;
+            const replies = document.getElementById('replies').value.split(',');
+
+            const response = await fetch('/set-auto-reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword, replies })
+            });
+
+            const result = await response.json();
+            alert(result.message);
+        });
+
+        // 4. Cek Status
+        document.getElementById('btn-check-status').addEventListener('click', async () => {
+            const response = await fetch('/status');
+            const result = await response.json();
+            document.getElementById('status-container').textContent = `Status: ${result.status}`;
+        });
+
+        // 5. Logout
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+            const response = await fetch('/logout');
+            const result = await response.json();
+            alert(result.message);
+            window.location.reload();
+        });
+
+    });
+</script>
+
+</body>
+</html>

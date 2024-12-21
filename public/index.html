@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp API Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">WhatsApp API</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('groups-output'); fetchGroups(); return false;">Groups</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('send-group'); return false;">Send Group Message</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('send-private'); return false;">Send Private Message</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('set-reply'); return false;">Set Auto Reply</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('view-replies'); fetchAutoReplies(); return false;">View Auto Replies</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('status-output'); checkStatus(); return false;">Status</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="logout(); return false;">Logout</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('qr-output'); fetchQR(); return false;">Scan QR Code</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Groups Output -->
+        <div id="groups-output" class="card d-none">
+            <div class="card-body">
+                <h5 class="card-title">Groups</h5>
+                <pre id="groups-data"></pre>
+            </div>
+        </div>
+
+        <!-- Send Group Message -->
+        <div id="send-group" class="card d-none">
+            <div class="card-body">
+                <h5 class="card-title">Send Message to Group</h5>
+                <div class="mb-3">
+                    <label for="group-id" class="form-label">Group ID</label>
+                    <input type="text" id="group-id" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="group-message" class="form-label">Message</label>
+                    <textarea id="group-message" class="form-control" rows="3"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="sendGroupMessage();">Send</button>
+            </div>
+        </div>
+
+        <!-- Send Private Message -->
+        <div id="send-private" class="card d-none">
+            <div class="card-body">
+                <h5 class="card-title">Send Private Message</h5>
+                <div class="mb-3">
+                    <label for="number" class="form-label">Phone Number</label>
+                    <input type="text" id="number" class="form-control" placeholder="e.g., 628123456789">
+                </div>
+                <div class="mb-3">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea id="message" class="form-control" rows="3"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="sendMessage();">Send</button>
+            </div>
+        </div>
+
+        <!-- Set Auto Reply -->
+        <div id="set-reply" class="card d-none">
+            <div class="card-body">
+                <h5 class="card-title">Set Auto Reply</h5>
+                <div class="mb-3">
+                    <label for="keyword" class="form-label">Keyword</label>
+                    <input type="text" id="keyword" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="replies" class="form-label">Replies (one per line)</label>
+                    <textarea id="replies" class="form-control" rows="3"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="setAutoReply();">Set</button>
+            </div>
+        </div>
+
+        <!-- View Auto Replies -->
+        <div id="view-replies" class="card d-none">
+            <div class="card-body">
+                <h5 class="card-title">View Auto Replies</h5>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Keyword</th>
+                            <th>Replies</th>
+                        </tr>
+                    </thead>
+                    <tbody id="replies-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Status Output -->
+        <div id="status-output" class="card d-none">
+            <div class="card-body">
+                <h5 class="card-title">Status</h5>
+                <pre id="status-data"></pre>
+            </div>
+        </div>
+
+        <!-- QR Code Output -->
+        <div id="qr-output" class="card d-none">
+            <div class="card-body text-center">
+                <h5 class="card-title">Scan QR Code</h5>
+                <div id="qr-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(id) {
+            document.querySelectorAll('.card').forEach(card => card.classList.add('d-none'));
+            document.getElementById(id).classList.remove('d-none');
+        }
+
+        async function fetchGroups() {
+            const response = await fetch('/groups');
+            const data = await response.json();
+            const output = document.getElementById('groups-data');
+            if (data.status === 'success') {
+                output.textContent = JSON.stringify(data.groups, null, 2);
+            } else {
+                output.textContent = 'Error fetching groups.';
+            }
+        }
+
+        async function fetchAutoReplies() {
+            const response = await fetch('/auto-replies');
+            const data = await response.json();
+            const table = document.getElementById('replies-table');
+            table.innerHTML = ''; // Clear previous data
+            if (data.status === 'success') {
+                data.replies.forEach(reply => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${reply.keyword}</td><td>${reply.replies.join('<br>')}</td>`;
+                    table.appendChild(row);
+                });
+            } else {
+                table.innerHTML = '<tr><td colspan="2">Error fetching auto replies.</td></tr>';
+            }
+        }
+    
+
+        async function setAutoReply() {
+            const keyword = document.getElementById('keyword').value;
+            const replies = document.getElementById('replies').value.split('\n');
+            const response = await fetch('/set-auto-reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword, replies })
+            });
+            const data = await response.json();
+            alert(data.message || 'Error setting auto-reply.');
+        }
+
+        async function checkStatus() {
+            const response = await fetch('/status');
+            const data = await response.json();
+            const output = document.getElementById('status-data');
+            output.textContent = `Status: ${data.status}`;
+        }
+
+
+        async function fetchQR() {
+            const response = await fetch('/scan');
+            const output = document.getElementById('qr-container');
+            if (response.ok) {
+                const qrHTML = await response.text();
+                output.innerHTML = qrHTML;
+            } else {
+                output.innerHTML = '<h3>Error loading QR Code</h3>';
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
